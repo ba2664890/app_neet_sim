@@ -419,6 +419,7 @@ with tab1:
             plot_bgcolor=BG_COLOR,
             height=280,
             margin=dict(t=60, b=10, l=20, r=20),
+            font=dict(color="#000000"),
         )
         st.plotly_chart(fig_gauge, use_container_width=True)
 
@@ -461,9 +462,10 @@ with tab1:
             plot_bgcolor=BG_COLOR,
             height=380,
             margin=dict(t=10, b=10, l=10, r=80),
+            font=dict(color="#000000"),
             xaxis=dict(showgrid=True, gridcolor=GRID_COLOR, zeroline=True,
-                       zerolinecolor="#cbd5e1", color=TEXT_COLOR, tickfont=dict(size=9)),
-            yaxis=dict(color="#0f172a", tickfont=dict(size=10)),
+                       zerolinecolor="#cbd5e1", color="#000000", tickfont=dict(color="#000000", size=9)),
+            yaxis=dict(color="#000000", tickfont=dict(color="#000000", size=10)),
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -587,8 +589,9 @@ with tab2:
                 plot_bgcolor=BG_COLOR,
                 height=260,
                 margin=dict(t=20, b=30, l=50, r=20),
-                xaxis=dict(title="Étapes d'intervention", color=TEXT_COLOR, gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR)),
-                yaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR)),
+                font=dict(color="#000000"),
+                xaxis=dict(title="Étapes d'intervention", color="#000000", gridcolor=GRID_COLOR, tickfont=dict(color="#000000")),
+                yaxis=dict(title="Taux NEET (%)", color="#000000", gridcolor=GRID_COLOR, tickfont=dict(color="#000000")),
                 showlegend=False,
             )
             st.plotly_chart(fig_traj, use_container_width=True)
@@ -673,9 +676,10 @@ with tab3:
         plot_bgcolor=BG_COLOR,
         height=max(280, len(rows) * 55),
         margin=dict(t=20, b=20, l=20, r=80),
-        xaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR,
-                   tickfont=dict(color=TEXT_COLOR), range=[0, max(df_comp["NEET"].max() * 110, 30)]),
-        yaxis=dict(color=TEXT_COLOR, tickfont=dict(color=TEXT_COLOR, size=12)),
+        font=dict(color="#000000"),
+        xaxis=dict(title="Taux NEET (%)", color="#000000", gridcolor=GRID_COLOR,
+                   tickfont=dict(color="#000000"), range=[0, max(df_comp["NEET"].max() * 110, 30)]),
+        yaxis=dict(color="#000000", tickfont=dict(color="#000000", size=12)),
         legend=dict(bgcolor="#f8fafc", font=dict(color="#000000"), bordercolor="#e2e8f0", borderwidth=1),
     )
     st.plotly_chart(fig_comp, use_container_width=True)
@@ -711,11 +715,12 @@ with tab3:
                 fillcolor=f"rgba(0,0,0,0.03)",
             ))
         fig_radar.update_layout(
+            font=dict(color="#000000"),
             polar=dict(
                 bgcolor="#f8fafc",
                 radialaxis=dict(visible=True, range=[0, 100], color=TICK_COLOR,
-                                gridcolor="#e2e8f0", tickfont=dict(color=TEXT_COLOR)),
-                angularaxis=dict(color=TEXT_COLOR, gridcolor="#e2e8f0"),
+                                gridcolor="#e2e8f0", tickfont=dict(color="#000000")),
+                angularaxis=dict(color="#000000", gridcolor="#e2e8f0"),
             ),
             paper_bgcolor=BG_COLOR,
             legend=dict(bgcolor="#f8fafc", font=dict(color="#000000"), bordercolor="#e2e8f0", borderwidth=1),
