@@ -28,6 +28,13 @@ html, body, [class*="css"] {
     color: #0f172a;
 }
 
+.stApp label,
+.stApp div[role="checkbox"],
+.stApp [role="checkbox"] + div,
+.stApp [data-testid="stCheckbox"] {
+    color: #0f172a !important;
+}
+
 /* Fond principal */
 .stApp {
     background: #eff6ff;
