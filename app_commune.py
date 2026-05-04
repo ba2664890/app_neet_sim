@@ -378,7 +378,7 @@ tab1, tab2, tab3 = st.tabs(["Résultat et Analyse", "Leviers d'action", "Compara
 BG_COLOR   = "#ffffff"
 GRID_COLOR = "#e2e8f0"
 TICK_COLOR = "#334155"
-TEXT_COLOR = "#334155"
+TEXT_COLOR = "#000000"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Résultat
@@ -587,8 +587,8 @@ with tab2:
                 plot_bgcolor=BG_COLOR,
                 height=260,
                 margin=dict(t=20, b=30, l=50, r=20),
-                xaxis=dict(title="Étapes d'intervention", color=TEXT_COLOR, gridcolor=GRID_COLOR),
-                yaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR),
+                xaxis=dict(title="Étapes d'intervention", color=TEXT_COLOR, gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR)),
+                yaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR, tickfont=dict(color=TEXT_COLOR)),
                 showlegend=False,
             )
             st.plotly_chart(fig_traj, use_container_width=True)
@@ -673,9 +673,10 @@ with tab3:
         plot_bgcolor=BG_COLOR,
         height=max(280, len(rows) * 55),
         margin=dict(t=20, b=20, l=20, r=80),
-        xaxis=dict(title="Taux NEET (%)", color="#334155", gridcolor=GRID_COLOR,
-                   range=[0, max(df_comp["NEET"].max() * 110, 30)]),
-        yaxis=dict(color="#0f172a", tickfont=dict(size=12)),
+        xaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR,
+                   tickfont=dict(color=TEXT_COLOR), range=[0, max(df_comp["NEET"].max() * 110, 30)]),
+        yaxis=dict(color=TEXT_COLOR, tickfont=dict(color=TEXT_COLOR, size=12)),
+        legend=dict(bgcolor="#f8fafc", font=dict(color="#000000"), bordercolor="#e2e8f0", borderwidth=1),
     )
     st.plotly_chart(fig_comp, use_container_width=True)
 
@@ -717,7 +718,7 @@ with tab3:
                 angularaxis=dict(color=TEXT_COLOR, gridcolor="#e2e8f0"),
             ),
             paper_bgcolor=BG_COLOR,
-            legend=dict(bgcolor="#f8fafc", font=dict(color="#374151"), bordercolor="#e2e8f0", borderwidth=1),
+            legend=dict(bgcolor="#f8fafc", font=dict(color="#000000"), bordercolor="#e2e8f0", borderwidth=1),
             height=420,
             margin=dict(t=30, b=30, l=30, r=30),
         )
