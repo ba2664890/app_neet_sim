@@ -13,7 +13,7 @@ import plotly.express as px
 # ─── CONFIG PAGE ────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Simulateur NEET — Communes",
-    page_icon="📊",
+    page_icon="S",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -21,79 +21,86 @@ st.set_page_config(
 # ─── STYLES ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'DM Sans', sans-serif;
 }
 
 /* Fond principal */
 .stApp {
-    background: #0b1120;
-    color: #e8eaf0;
+    background: #f4f6f9;
+    color: #1a2035;
 }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background: #111827 !important;
-    border-right: 1px solid #1f2a3d;
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.04);
 }
 section[data-testid="stSidebar"] * {
-    color: #c9d1e0 !important;
+    color: #374151 !important;
 }
 section[data-testid="stSidebar"] .stSlider label {
     font-size: 0.78rem !important;
-    color: #8899b0 !important;
+    color: #6b7280 !important;
 }
 
 /* Titres */
-h1 { font-family: 'Syne', sans-serif !important; }
-h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
+h1 { font-family: 'Fraunces', serif !important; }
+h2, h3 { font-family: 'DM Sans', sans-serif !important; }
 
 /* Metric cards */
 .metric-card {
-    background: linear-gradient(135deg, #141e30 0%, #1a2744 100%);
-    border: 1px solid #263558;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 24px 28px;
     text-align: center;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
-.metric-card:hover { transform: translateY(-3px); }
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+}
 .metric-label {
-    font-size: 0.78rem;
-    color: #6b7fa3;
+    font-size: 0.72rem;
+    color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-bottom: 8px;
+    font-weight: 600;
 }
 .metric-value {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Fraunces', serif;
     font-size: 2.4rem;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1;
+    color: #1a2035;
 }
 .metric-sub {
     font-size: 0.75rem;
-    color: #5a6a85;
+    color: #9ca3af;
     margin-top: 6px;
 }
 
 /* Gauge badge */
-.badge-low    { color: #22d3a5; }
-.badge-medium { color: #f59e0b; }
-.badge-high   { color: #ef4444; }
-.badge-critic { color: #9b1c1c; }
+.badge-low    { color: #059669; }
+.badge-medium { color: #d97706; }
+.badge-high   { color: #dc2626; }
+.badge-critic { color: #7f1d1d; }
 
 /* Section headers */
 .section-header {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #7dd3fc;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #2563eb;
     text-transform: uppercase;
     letter-spacing: 2px;
-    border-left: 3px solid #3b82f6;
+    border-left: 3px solid #2563eb;
     padding-left: 12px;
     margin: 20px 0 14px 0;
 }
@@ -109,48 +116,58 @@ h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
     font-weight: 600;
     margin: 3px;
 }
-.pill-red   { background: #3b1219; color: #f87171; border: 1px solid #7f1d1d; }
-.pill-green { background: #052e16; color: #4ade80; border: 1px solid #14532d; }
+.pill-red   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.pill-green { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 
 /* Divider */
 .fancy-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, #2d4270, transparent);
+    background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
     margin: 24px 0;
 }
 
 /* Group accordion */
 .group-title {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: #4b6090;
     margin-top: 18px;
     margin-bottom: 4px;
     padding: 4px 0;
-    border-bottom: 1px solid #1f2a3d;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
 }
 
 /* Tab style */
 .stTabs [data-baseweb="tab-list"] {
-    background: #111827;
-    border-radius: 10px;
+    background: #ffffff;
+    border-radius: 12px;
     padding: 4px;
     gap: 4px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 .stTabs [data-baseweb="tab"] {
     background: transparent;
     border-radius: 8px;
-    color: #6b7fa3 !important;
+    color: #6b7280 !important;
     font-weight: 500;
+    font-size: 0.85rem;
 }
 .stTabs [aria-selected="true"] {
-    background: #1e3a5f !important;
-    color: #93c5fd !important;
+    background: #2563eb !important;
+    color: #ffffff !important;
 }
 
 /* Slider overrides */
 .stSlider > div { padding: 0 !important; }
+
+/* Selectbox */
+.stSelectbox > div > div {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,48 +204,48 @@ def predict_neet(values_dict):
     return max(0.0, min(1.0, pred))
 
 def neet_label(v):
-    if v < 0.25: return "Faible", "#22d3a5", "badge-low"
-    if v < 0.45: return "Modéré", "#f59e0b", "badge-medium"
-    if v < 0.65: return "Élevé",  "#ef4444", "badge-high"
-    return "Critique", "#9b1c1c", "badge-critic"
+    if v < 0.25: return "Faible",   "#059669", "badge-low"
+    if v < 0.45: return "Modéré",   "#d97706", "badge-medium"
+    if v < 0.65: return "Élevé",    "#dc2626", "badge-high"
+    return            "Critique",   "#7f1d1d", "badge-critic"
 
 # ─── FEATURE GROUPS ──────────────────────────────────────────────────────────
 GROUPS = {
-    "🧑‍👧 Démographie": {
-        "color": "#818cf8",
+    "Démographie": {
+        "color": "#6366f1",
         "features": ["D1_Taux_Feminite_15_35", "D4_Mariage_Precoce",
                      "D5_Taux_Orphelins", "D6_Taux_Urbanisation"]
     },
-    "📚 Éducation": {
-        "color": "#34d399",
+    "Éducation": {
+        "color": "#0891b2",
         "features": ["S1_Taux_Descolarisation", "S2_Taux_NonScolarisation",
                      "S3_Taux_Achevement_BFEM", "S4_Taux_Analphabetisme",
                      "S5_Taux_Formation_Pro", "S6_Part_Coranique_Exclusif",
                      "S7_Taux_Handicap"]
     },
-    "💼 Emploi & Économie": {
-        "color": "#fb923c",
+    "Emploi et Économie": {
+        "color": "#ea580c",
         "features": ["E2_Taux_Chomage", "E3_Taux_Informalite",
                      "E4_Part_Emploi_Agricole", "E5_Pauvrete_Alim_Conjoncturelle",
                      "E6_Pauvrete_Alim_Structurelle", "E7_Transferts_Diaspora",
                      "E8_Inactivite_Feminine"]
     },
-    "📱 Technologie": {
-        "color": "#38bdf8",
+    "Technologie": {
+        "color": "#0284c7",
         "features": ["T1_Acces_Internet", "T2_Possession_Mobile", "T3_Possession_Ordinateur"]
     },
-    "🏠 Habitat": {
-        "color": "#e879f9",
+    "Habitat": {
+        "color": "#7c3aed",
         "features": ["H1_Location_Precaire", "H2_Acces_Eau_Potable",
                      "H3_Acces_Toilettes_Adequates", "H4_Surpeuplement",
                      "H5_Indice_Equipement_Moyen"]
     },
-    "✈️ Migration": {
-        "color": "#fbbf24",
+    "Migration": {
+        "color": "#b45309",
         "features": ["M1_Migration_Recente_1an", "M3_Emig_Pour_Travail", "M4_Emig_Pour_Etudes"]
     },
-    "👨‍👩‍👧 Ménage": {
-        "color": "#a3e635",
+    "Ménage": {
+        "color": "#15803d",
         "features": ["R1_Taille_Moyenne_Menages", "R3_Fecondite_Precoce"]
     },
 }
@@ -239,19 +256,19 @@ LABELS = {
     "D5_Taux_Orphelins":            "Taux d'orphelins",
     "D6_Taux_Urbanisation":         "Urbanisation",
     "S1_Taux_Descolarisation":      "Déscolarisation",
-    "S2_Taux_NonScolarisation":     "Non-scolarisation ⚡",
+    "S2_Taux_NonScolarisation":     "Non-scolarisation",
     "S3_Taux_Achevement_BFEM":      "Achèvement BFEM",
     "S4_Taux_Analphabetisme":       "Analphabétisme",
     "S5_Taux_Formation_Pro":        "Formation pro",
     "S6_Part_Coranique_Exclusif":   "Coranique exclusif",
     "S7_Taux_Handicap":             "Handicap",
-    "E2_Taux_Chomage":              "Chômage ⚡",
+    "E2_Taux_Chomage":              "Chômage",
     "E3_Taux_Informalite":          "Informalité",
     "E4_Part_Emploi_Agricole":      "Emploi agricole",
     "E5_Pauvrete_Alim_Conjoncturelle": "Pauvreté alim. conjoncturelle",
     "E6_Pauvrete_Alim_Structurelle":   "Pauvreté alim. structurelle",
     "E7_Transferts_Diaspora":       "Transferts diaspora",
-    "E8_Inactivite_Feminine":       "Inactivité féminine ⚡",
+    "E8_Inactivite_Feminine":       "Inactivité féminine",
     "T1_Acces_Internet":            "Accès internet",
     "T2_Possession_Mobile":         "Possession mobile",
     "T3_Possession_Ordinateur":     "Possession ordinateur",
@@ -260,7 +277,7 @@ LABELS = {
     "H3_Acces_Toilettes_Adequates": "Toilettes adéquates",
     "H4_Surpeuplement":             "Surpeuplement",
     "H5_Indice_Equipement_Moyen":   "Indice équipement moyen",
-    "M1_Migration_Recente_1an":     "Migration récente (1an)",
+    "M1_Migration_Recente_1an":     "Migration récente (1 an)",
     "M3_Emig_Pour_Travail":         "Émigration pour travail",
     "M4_Emig_Pour_Etudes":          "Émigration pour études",
     "R1_Taille_Moyenne_Menages":    "Taille moy. ménages",
@@ -270,14 +287,12 @@ LABELS = {
 # ─── HEADER ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="padding: 2rem 0 1rem 0;">
-    <div style="font-family:'Syne',sans-serif; font-size:2.4rem; font-weight:800;
-                background: linear-gradient(135deg, #60a5fa, #a78bfa);
-                -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                line-height:1.1; margin-bottom:0.4rem;">
+    <div style="font-family:'Fraunces',serif; font-size:2.4rem; font-weight:700;
+                color: #1a2035; line-height:1.1; margin-bottom:0.4rem;">
         Simulateur NEET par Commune
     </div>
-    <div style="color:#4b6090; font-size:0.9rem; letter-spacing:1px;">
-        Sénégal · 552 communes · Régression Linéaire · R² = 0.9595
+    <div style="color:#6b7280; font-size:0.9rem; letter-spacing:0.5px; font-family:'DM Sans',sans-serif;">
+        Sénégal &nbsp;·&nbsp; 552 communes &nbsp;·&nbsp; Régression Linéaire &nbsp;·&nbsp; R² = 0.9595
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -287,18 +302,18 @@ st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
 # ─── SIDEBAR — SLIDERS ───────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-    <div style="font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800;
-                color:#60a5fa; margin-bottom:4px;">
-        ⚙️ Paramètres
+    <div style="font-family:'Fraunces',serif; font-size:1.3rem; font-weight:700;
+                color:#1a2035; margin-bottom:4px;">
+        Paramètres
     </div>
-    <div style="color:#4b6090; font-size:0.75rem; margin-bottom:16px;">
+    <div style="color:#6b7280; font-size:0.75rem; margin-bottom:16px; font-family:'DM Sans',sans-serif;">
         Ajustez les indicateurs pour simuler le taux NEET
     </div>
     """, unsafe_allow_html=True)
 
     # Préchargement depuis une commune réelle
     communes_list = ["— Manuel —"] + sorted(df_data["Commune_Nom"].tolist())
-    selected_commune = st.selectbox("📍 Charger une commune", communes_list)
+    selected_commune = st.selectbox("Charger une commune", communes_list)
 
     if selected_commune != "— Manuel —":
         row = df_data[df_data["Commune_Nom"] == selected_commune].iloc[0]
@@ -320,7 +335,6 @@ with st.sidebar:
             mx  = FEAT_STATS[feat]["max"]
             avg = defaults[feat]
 
-            # Special: R1_Taille_Moyenne_Menages is not 0-1
             if feat == "R1_Taille_Moyenne_Menages":
                 val = st.slider(
                     LABELS[feat], min_value=round(mn, 1), max_value=round(mx, 1),
@@ -342,10 +356,16 @@ label, color, badge_cls = neet_label(neet_pred)
 # Calcul contribution de chaque variable
 x_arr    = np.array([values[f] for f in FEATURES])
 x_sc_arr = (x_arr - SCALER_MEAN) / SCALER_SCALE
-contributions = x_sc_arr * COEF  # contribution de chaque feature au score
+contributions = x_sc_arr * COEF
 
 # ─── MAIN LAYOUT ─────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["📊 Résultat & Analyse", "🎯 Leviers d'action", "🗺️ Comparaison"])
+tab1, tab2, tab3 = st.tabs(["Résultat et Analyse", "Leviers d'action", "Comparaison"])
+
+# Couleurs pour les graphiques (thème clair)
+BG_COLOR   = "#ffffff"
+GRID_COLOR = "#f1f5f9"
+TICK_COLOR = "#94a3b8"
+TEXT_COLOR = "#64748b"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Résultat
@@ -359,18 +379,18 @@ with tab1:
             mode="gauge+number",
             value=neet_pred * 100,
             number={"suffix": "%", "font": {"size": 42, "color": color,
-                                             "family": "Syne"}},
+                                             "family": "Fraunces"}},
             gauge={
                 "axis": {"range": [0, 100], "tickwidth": 1,
-                         "tickcolor": "#2d3f5e", "tickfont": {"color": "#4b6090"}},
+                         "tickcolor": TICK_COLOR, "tickfont": {"color": TEXT_COLOR}},
                 "bar": {"color": color, "thickness": 0.25},
-                "bgcolor": "#0f1929",
+                "bgcolor": "#f8fafc",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0, 25],  "color": "#052e16"},
-                    {"range": [25, 45], "color": "#1c2702"},
-                    {"range": [45, 65], "color": "#2d1a00"},
-                    {"range": [65, 100],"color": "#2d0a0a"},
+                    {"range": [0, 25],  "color": "#d1fae5"},
+                    {"range": [25, 45], "color": "#fef9c3"},
+                    {"range": [45, 65], "color": "#fee2e2"},
+                    {"range": [65, 100],"color": "#fca5a5"},
                 ],
                 "threshold": {
                     "line": {"color": color, "width": 3},
@@ -379,11 +399,11 @@ with tab1:
                 },
             },
             title={"text": f"<b>Taux NEET Prédit</b><br><span style='color:{color};font-size:1rem'>{label}</span>",
-                   "font": {"color": "#8899b0", "size": 14}},
+                   "font": {"color": "#6b7280", "size": 14}},
         ))
         fig_gauge.update_layout(
-            paper_bgcolor="#0f1929",
-            plot_bgcolor="#0f1929",
+            paper_bgcolor=BG_COLOR,
+            plot_bgcolor=BG_COLOR,
             height=280,
             margin=dict(t=60, b=10, l=20, r=20),
         )
@@ -395,7 +415,7 @@ with tab1:
         st.markdown(f"""
         <div class="metric-card" style="margin-top:8px;">
             <div class="metric-label">Vs Moyenne nationale</div>
-            <div class="metric-value" style="color:{'#ef4444' if delta>0 else '#22d3a5'}; font-size:1.8rem;">
+            <div class="metric-value" style="color:{'#dc2626' if delta>0 else '#059669'}; font-size:1.8rem;">
                 {'▲' if delta>0 else '▼'} {abs(delta_pct):.1f} pts
             </div>
             <div class="metric-sub">Moyenne : {neet_mean*100:.1f}%</div>
@@ -405,14 +425,13 @@ with tab1:
     with col_metrics:
         st.markdown('<div class="section-header">Top contributions au taux NEET</div>', unsafe_allow_html=True)
 
-        # Waterfall chart des contributions
         contrib_df = pd.DataFrame({
             "feature": FEATURES,
             "label":   [LABELS[f] for f in FEATURES],
             "contrib": contributions,
         }).sort_values("contrib", key=abs, ascending=False).head(12)
 
-        colors_bar = ["#ef4444" if v > 0 else "#22d3a5" for v in contrib_df["contrib"]]
+        colors_bar = ["#ef4444" if v > 0 else "#10b981" for v in contrib_df["contrib"]]
 
         fig_bar = go.Figure(go.Bar(
             x=contrib_df["contrib"],
@@ -422,16 +441,16 @@ with tab1:
             marker_line_width=0,
             text=[f"{v:+.4f}" for v in contrib_df["contrib"]],
             textposition="outside",
-            textfont=dict(color="#6b7fa3", size=10),
+            textfont=dict(color=TEXT_COLOR, size=10),
         ))
         fig_bar.update_layout(
-            paper_bgcolor="#0b1120",
-            plot_bgcolor="#0b1120",
+            paper_bgcolor=BG_COLOR,
+            plot_bgcolor=BG_COLOR,
             height=380,
             margin=dict(t=10, b=10, l=10, r=80),
-            xaxis=dict(showgrid=True, gridcolor="#1a2540", zeroline=True,
-                       zerolinecolor="#2d4270", color="#4b6090", tickfont=dict(size=9)),
-            yaxis=dict(color="#8899b0", tickfont=dict(size=10)),
+            xaxis=dict(showgrid=True, gridcolor=GRID_COLOR, zeroline=True,
+                       zerolinecolor="#cbd5e1", color=TEXT_COLOR, tickfont=dict(size=9)),
+            yaxis=dict(color="#374151", tickfont=dict(size=10)),
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -440,25 +459,25 @@ with tab1:
     st.markdown('<div class="section-header">Indicateurs clés de la simulation</div>', unsafe_allow_html=True)
 
     key_feats = [
-        ("S2_Taux_NonScolarisation", "Non-scolarisation", "📚"),
-        ("E2_Taux_Chomage",          "Chômage",           "💼"),
-        ("E8_Inactivite_Feminine",   "Inactivité féminine", "👩"),
-        ("S3_Taux_Achevement_BFEM", "Achèvement BFEM",   "🎓"),
-        ("D4_Mariage_Precoce",       "Mariage précoce",   "💍"),
+        ("S2_Taux_NonScolarisation", "Non-scolarisation"),
+        ("E2_Taux_Chomage",          "Chômage"),
+        ("E8_Inactivite_Feminine",   "Inactivité féminine"),
+        ("S3_Taux_Achevement_BFEM", "Achèvement BFEM"),
+        ("D4_Mariage_Precoce",       "Mariage précoce"),
     ]
     cols = st.columns(5)
-    for col, (feat, lbl, icon) in zip(cols, key_feats):
+    for col, (feat, lbl) in zip(cols, key_feats):
         v = values[feat]
         nat_mean = FEAT_STATS[feat]["mean"]
         d = v - nat_mean
         col.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">{icon} {lbl}</div>
-            <div class="metric-value" style="font-size:1.6rem; color:#60a5fa;">
+            <div class="metric-label">{lbl}</div>
+            <div class="metric-value" style="font-size:1.6rem; color:#2563eb;">
                 {v*100:.1f}%
             </div>
-            <div class="metric-sub" style="color:{'#ef4444' if d>0 else '#22d3a5'};">
-                {'▲' if d>0 else '▼'} {abs(d*100):.1f}pts vs moy.
+            <div class="metric-sub" style="color:{'#dc2626' if d>0 else '#059669'};">
+                {'▲' if d>0 else '▼'} {abs(d*100):.1f} pts vs moy.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -469,7 +488,7 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-header">Simulation de scénarios d\'intervention</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div style="color:#4b6090; font-size:0.85rem; margin-bottom:20px;">
+    <div style="color:#6b7280; font-size:0.85rem; margin-bottom:20px; font-family:'DM Sans',sans-serif;">
         Définissez un objectif de réduction du NEET et découvrez l'impact des leviers d'action.
     </div>
     """, unsafe_allow_html=True)
@@ -478,7 +497,7 @@ with tab2:
 
     with col_scen:
         target_neet = st.slider(
-            "🎯 Objectif NEET cible (%)",
+            "Objectif NEET cible (%)",
             min_value=5, max_value=int(neet_pred * 100),
             value=max(5, int(neet_pred * 100) - 10),
             step=1
@@ -488,7 +507,7 @@ with tab2:
         st.markdown(f"""
         <div class="metric-card" style="margin-bottom:16px;">
             <div class="metric-label">Réduction à atteindre</div>
-            <div class="metric-value" style="color:#f59e0b; font-size:2rem;">
+            <div class="metric-value" style="color:#d97706; font-size:2rem;">
                 -{reduction*100:.1f} pts
             </div>
         </div>
@@ -497,13 +516,13 @@ with tab2:
         # Leviers sélectionnables
         st.markdown("**Choisissez les leviers à activer :**")
         leviers = {
-            "S2_Taux_NonScolarisation": ("📚 Réduire non-scolarisation", -1),
-            "E2_Taux_Chomage":          ("💼 Réduire chômage",           -1),
-            "S5_Taux_Formation_Pro":    ("🎓 Augmenter formation pro",    +1),
-            "S3_Taux_Achevement_BFEM": ("📖 Augmenter achèvement BFEM", +1),
-            "D4_Mariage_Precoce":       ("💍 Réduire mariage précoce",   -1),
-            "E8_Inactivite_Feminine":   ("👩 Réduire inactivité féminine", -1),
-            "T2_Possession_Mobile":     ("📱 Augmenter possession mobile", +1),
+            "S2_Taux_NonScolarisation": ("Réduire non-scolarisation",   -1),
+            "E2_Taux_Chomage":          ("Réduire chômage",              -1),
+            "S5_Taux_Formation_Pro":    ("Augmenter formation pro",       +1),
+            "S3_Taux_Achevement_BFEM": ("Augmenter achèvement BFEM",    +1),
+            "D4_Mariage_Precoce":       ("Réduire mariage précoce",      -1),
+            "E8_Inactivite_Feminine":   ("Réduire inactivité féminine",  -1),
+            "T2_Possession_Mobile":     ("Augmenter possession mobile",   +1),
         }
         selected_leviers = {}
         for feat, (label_l, direction) in leviers.items():
@@ -512,7 +531,6 @@ with tab2:
 
     with col_res:
         if selected_leviers:
-            # Simulation : modifier les valeurs par pas de 5%
             scenario_values = dict(values)
             step_size = 0.05
             max_steps = 20
@@ -534,42 +552,42 @@ with tab2:
             final_neet = history[-1]
             label_f, color_f, _ = neet_label(final_neet)
 
-            # Line chart de la trajectoire
             fig_traj = go.Figure()
             fig_traj.add_trace(go.Scatter(
                 y=[v * 100 for v in history],
                 mode="lines+markers",
-                line=dict(color="#60a5fa", width=3),
-                marker=dict(size=6, color="#60a5fa"),
+                line=dict(color="#2563eb", width=3),
+                marker=dict(size=6, color="#2563eb"),
                 name="Trajectoire NEET",
                 fill="tozeroy",
-                fillcolor="rgba(96,165,250,0.08)"
+                fillcolor="rgba(37,99,235,0.06)"
             ))
             fig_traj.add_hline(
                 y=target_neet * 100,
                 line_dash="dash",
-                line_color="#22d3a5",
+                line_color="#059669",
                 annotation_text=f"Objectif {target_neet*100:.1f}%",
-                annotation_font_color="#22d3a5"
+                annotation_font_color="#059669"
             )
             fig_traj.update_layout(
-                paper_bgcolor="#0b1120",
-                plot_bgcolor="#0b1120",
+                paper_bgcolor=BG_COLOR,
+                plot_bgcolor=BG_COLOR,
                 height=260,
                 margin=dict(t=20, b=30, l=50, r=20),
-                xaxis=dict(title="Étapes d'intervention", color="#4b6090", gridcolor="#1a2540"),
-                yaxis=dict(title="Taux NEET (%)", color="#4b6090", gridcolor="#1a2540"),
+                xaxis=dict(title="Étapes d'intervention", color=TEXT_COLOR, gridcolor=GRID_COLOR),
+                yaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR),
                 showlegend=False,
             )
             st.plotly_chart(fig_traj, use_container_width=True)
 
-            # Résultat
             achieved = final_neet <= target_neet
+            border_color = "#bbf7d0" if achieved else "#fecaca"
+            status_label = "Objectif atteint" if achieved else "Objectif non atteint"
             st.markdown(f"""
-            <div class="metric-card" style="border-color:{'#166534' if achieved else '#7f1d1d'};">
-                <div class="metric-label">{'✅ Objectif atteint' if achieved else '⚠️ Objectif non atteint'}</div>
+            <div class="metric-card" style="border-color:{border_color};">
+                <div class="metric-label">{status_label}</div>
                 <div class="metric-value" style="color:{color_f}; font-size:1.8rem;">
-                    {final_neet*100:.1f}% → {label_f}
+                    {final_neet*100:.1f}% — {label_f}
                 </div>
                 <div class="metric-sub">
                     Gain : -{(neet_pred - final_neet)*100:.1f} pts en {len(history)-1} étapes
@@ -577,7 +595,6 @@ with tab2:
             </div>
             """, unsafe_allow_html=True)
 
-            # Détail des changements
             st.markdown('<div class="section-header" style="margin-top:16px;">Changements appliqués</div>', unsafe_allow_html=True)
             for feat, direction in selected_leviers.items():
                 old_val = values[feat]
@@ -587,13 +604,13 @@ with tab2:
                 arrow    = "▼" if delta_v < 0 else "▲"
                 st.markdown(f"""
                 <span class="factor-pill {pill_cls}">
-                    {arrow} {LABELS[feat].replace(' ⚡','')} : {old_val*100:.1f}% → {new_val*100:.1f}%
+                    {arrow} {LABELS[feat]} : {old_val*100:.1f}% — {new_val*100:.1f}%
                 </span>
                 """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="text-align:center; color:#2d4270; padding:60px 20px; font-size:1rem;">
-                ← Sélectionnez au moins un levier d'action
+            <div style="text-align:center; color:#cbd5e1; padding:60px 20px; font-size:1rem; font-family:'DM Sans',sans-serif;">
+                Sélectionnez au moins un levier d'action
             </div>
             """, unsafe_allow_html=True)
 
@@ -612,15 +629,14 @@ with tab3:
         ) else []
     )
 
-    # Simulation actuelle
-    sim_row = {"Commune": "🔵 Ma Simulation", "NEET": neet_pred}
+    sim_row = {"Commune": "Ma Simulation", "NEET": neet_pred}
     rows = [sim_row]
     for c in communes_compare:
         row = df_data[df_data["Commune_Nom"] == c].iloc[0]
         rows.append({"Commune": c, "NEET": float(row[TARGET])})
 
     df_comp = pd.DataFrame(rows).sort_values("NEET", ascending=True)
-    colors_comp = ["#3b82f6" if r["Commune"].startswith("🔵") else "#6b7fa3"
+    colors_comp = ["#2563eb" if r["Commune"] == "Ma Simulation" else "#94a3b8"
                    for _, r in df_comp.iterrows()]
 
     fig_comp = go.Figure(go.Bar(
@@ -630,28 +646,27 @@ with tab3:
         marker_color=colors_comp,
         text=[f"{v*100:.1f}%" for v in df_comp["NEET"]],
         textposition="outside",
-        textfont=dict(color="#8899b0", size=11),
+        textfont=dict(color=TEXT_COLOR, size=11),
     ))
     fig_comp.add_vline(
         x=neet_mean * 100,
-        line_dash="dot", line_color="#f59e0b",
+        line_dash="dot", line_color="#d97706",
         annotation_text=f"Moy. nationale {neet_mean*100:.1f}%",
-        annotation_font_color="#f59e0b",
+        annotation_font_color="#d97706",
         annotation_position="top right"
     )
     fig_comp.update_layout(
-        paper_bgcolor="#0b1120",
-        plot_bgcolor="#0b1120",
+        paper_bgcolor=BG_COLOR,
+        plot_bgcolor=BG_COLOR,
         height=max(280, len(rows) * 55),
         margin=dict(t=20, b=20, l=20, r=80),
-        xaxis=dict(title="Taux NEET (%)", color="#4b6090", gridcolor="#1a2540",
+        xaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR,
                    range=[0, max(df_comp["NEET"].max() * 110, 30)]),
-        yaxis=dict(color="#c9d1e0", tickfont=dict(size=12)),
+        yaxis=dict(color="#374151", tickfont=dict(size=12)),
     )
     st.plotly_chart(fig_comp, use_container_width=True)
 
     if communes_compare:
-        # Radar chart multi-indicateurs
         st.markdown('<div class="section-header">Profil multi-indicateurs</div>', unsafe_allow_html=True)
         radar_feats = [
             "S2_Taux_NonScolarisation", "E2_Taux_Chomage",
@@ -659,19 +674,18 @@ with tab3:
             "T2_Possession_Mobile", "H2_Acces_Eau_Potable",
             "E8_Inactivite_Feminine"
         ]
-        radar_labels = [LABELS[f].replace(" ⚡", "") for f in radar_feats]
+        radar_labels = [LABELS[f] for f in radar_feats]
 
         fig_radar = go.Figure()
-        # Simulation actuelle
         fig_radar.add_trace(go.Scatterpolar(
             r=[values[f] * 100 for f in radar_feats] + [values[radar_feats[0]] * 100],
             theta=radar_labels + [radar_labels[0]],
             fill="toself",
             name="Ma Simulation",
-            line=dict(color="#3b82f6", width=2),
-            fillcolor="rgba(59,130,246,0.15)",
+            line=dict(color="#2563eb", width=2),
+            fillcolor="rgba(37,99,235,0.1)",
         ))
-        palette = ["#f59e0b", "#22d3a5", "#e879f9", "#fb923c"]
+        palette = ["#d97706", "#059669", "#7c3aed", "#dc2626"]
         for idx, c in enumerate(communes_compare[:4]):
             row = df_data[df_data["Commune_Nom"] == c].iloc[0]
             fig_radar.add_trace(go.Scatterpolar(
@@ -680,17 +694,17 @@ with tab3:
                 fill="toself",
                 name=c,
                 line=dict(color=palette[idx % 4], width=2),
-                fillcolor=f"rgba(0,0,0,0.05)",
+                fillcolor=f"rgba(0,0,0,0.03)",
             ))
         fig_radar.update_layout(
             polar=dict(
-                bgcolor="#0f1929",
-                radialaxis=dict(visible=True, range=[0, 100], color="#2d4270",
-                                gridcolor="#1a2540", tickfont=dict(color="#4b6090")),
-                angularaxis=dict(color="#4b6090", gridcolor="#1a2540"),
+                bgcolor="#f8fafc",
+                radialaxis=dict(visible=True, range=[0, 100], color=TICK_COLOR,
+                                gridcolor="#e2e8f0", tickfont=dict(color=TEXT_COLOR)),
+                angularaxis=dict(color=TEXT_COLOR, gridcolor="#e2e8f0"),
             ),
-            paper_bgcolor="#0b1120",
-            legend=dict(bgcolor="#111827", font=dict(color="#8899b0")),
+            paper_bgcolor=BG_COLOR,
+            legend=dict(bgcolor="#f8fafc", font=dict(color="#374151"), bordercolor="#e2e8f0", borderwidth=1),
             height=420,
             margin=dict(t=30, b=30, l=30, r=30),
         )
@@ -699,7 +713,8 @@ with tab3:
 # ─── FOOTER ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
 st.markdown("""
-<div style="text-align:center; color:#2d4270; font-size:0.75rem; padding:8px 0 16px 0;">
-    Modèle de Régression Linéaire · R² = 0.9595 · RMSE = 0.0273 · 552 communes · Sénégal
+<div style="text-align:center; color:#9ca3af; font-size:0.75rem; padding:8px 0 16px 0;
+            font-family:'DM Sans',sans-serif;">
+    Modèle de Régression Linéaire &nbsp;·&nbsp; R² = 0.9595 &nbsp;·&nbsp; RMSE = 0.0273 &nbsp;·&nbsp; 552 communes &nbsp;·&nbsp; Sénégal
 </div>
 """, unsafe_allow_html=True)
