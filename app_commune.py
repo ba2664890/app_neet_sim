@@ -29,6 +29,8 @@ html, body, [class*="css"] {
 }
 
 .stApp label,
+.stApp .stCheckbox,
+.stApp .stCheckbox *,
 .stApp .stCheckbox label,
 .stApp .stCheckbox div[role="checkbox"],
 .stApp div[role="checkbox"] + div,
