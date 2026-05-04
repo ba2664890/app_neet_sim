@@ -29,10 +29,13 @@ html, body, [class*="css"] {
 }
 
 .stApp label,
-.stApp div[role="checkbox"],
-.stApp [role="checkbox"] + div,
-.stApp [data-testid="stCheckbox"] {
-    color: #0f172a !important;
+.stApp .stCheckbox label,
+.stApp .stCheckbox div[role="checkbox"],
+.stApp div[role="checkbox"] + div,
+.stApp [data-testid="stCheckbox"],
+.stApp .css-10trblm,
+.stApp .css-1yj0el2 {
+    color: #000000 !important;
 }
 
 /* Fond principal */
