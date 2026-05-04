@@ -25,12 +25,13 @@ st.markdown("""
 
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif;
+    color: #0f172a;
 }
 
 /* Fond principal */
 .stApp {
-    background: #f4f6f9;
-    color: #1a2035;
+    background: #eff6ff;
+    color: #0f172a;
 }
 
 /* Sidebar */
@@ -40,11 +41,11 @@ section[data-testid="stSidebar"] {
     box-shadow: 2px 0 12px rgba(0,0,0,0.04);
 }
 section[data-testid="stSidebar"] * {
-    color: #374151 !important;
+    color: #111827 !important;
 }
 section[data-testid="stSidebar"] .stSlider label {
     font-size: 0.78rem !important;
-    color: #6b7280 !important;
+    color: #475569 !important;
 }
 
 /* Titres */
@@ -67,7 +68,7 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
 }
 .metric-label {
     font-size: 0.72rem;
-    color: #9ca3af;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-bottom: 8px;
@@ -78,11 +79,11 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
     font-size: 2.4rem;
     font-weight: 700;
     line-height: 1;
-    color: #1a2035;
+    color: #0f172a;
 }
 .metric-sub {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: #64748b;
     margin-top: 6px;
 }
 
@@ -97,10 +98,10 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
     font-family: 'DM Sans', sans-serif;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #2563eb;
+    color: #1d4ed8;
     text-transform: uppercase;
     letter-spacing: 2px;
-    border-left: 3px solid #2563eb;
+    border-left: 3px solid #1d4ed8;
     padding-left: 12px;
     margin: 20px 0 14px 0;
 }
@@ -150,7 +151,7 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
 .stTabs [data-baseweb="tab"] {
     background: transparent;
     border-radius: 8px;
-    color: #6b7280 !important;
+    color: #475569 !important;
     font-weight: 500;
     font-size: 0.85rem;
 }
@@ -291,7 +292,7 @@ st.markdown("""
                 color: #1a2035; line-height:1.1; margin-bottom:0.4rem;">
         Simulateur NEET par Commune
     </div>
-    <div style="color:#6b7280; font-size:0.9rem; letter-spacing:0.5px; font-family:'DM Sans',sans-serif;">
+    <div style="color:#475569; font-size:0.9rem; letter-spacing:0.5px; font-family:'DM Sans',sans-serif;">
         Sénégal &nbsp;·&nbsp; 552 communes &nbsp;·&nbsp; Régression Linéaire &nbsp;·&nbsp; R² = 0.9595
     </div>
 </div>
@@ -306,7 +307,7 @@ with st.sidebar:
                 color:#1a2035; margin-bottom:4px;">
         Paramètres
     </div>
-    <div style="color:#6b7280; font-size:0.75rem; margin-bottom:16px; font-family:'DM Sans',sans-serif;">
+    <div style="color:#475569; font-size:0.75rem; margin-bottom:16px; font-family:'DM Sans',sans-serif;">
         Ajustez les indicateurs pour simuler le taux NEET
     </div>
     """, unsafe_allow_html=True)
@@ -363,9 +364,9 @@ tab1, tab2, tab3 = st.tabs(["Résultat et Analyse", "Leviers d'action", "Compara
 
 # Couleurs pour les graphiques (thème clair)
 BG_COLOR   = "#ffffff"
-GRID_COLOR = "#f1f5f9"
-TICK_COLOR = "#94a3b8"
-TEXT_COLOR = "#64748b"
+GRID_COLOR = "#e2e8f0"
+TICK_COLOR = "#334155"
+TEXT_COLOR = "#334155"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Résultat
@@ -399,7 +400,7 @@ with tab1:
                 },
             },
             title={"text": f"<b>Taux NEET Prédit</b><br><span style='color:{color};font-size:1rem'>{label}</span>",
-                   "font": {"color": "#6b7280", "size": 14}},
+                   "font": {"color": "#475569", "size": 14}},
         ))
         fig_gauge.update_layout(
             paper_bgcolor=BG_COLOR,
@@ -450,7 +451,7 @@ with tab1:
             margin=dict(t=10, b=10, l=10, r=80),
             xaxis=dict(showgrid=True, gridcolor=GRID_COLOR, zeroline=True,
                        zerolinecolor="#cbd5e1", color=TEXT_COLOR, tickfont=dict(size=9)),
-            yaxis=dict(color="#374151", tickfont=dict(size=10)),
+            yaxis=dict(color="#0f172a", tickfont=dict(size=10)),
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -488,7 +489,7 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-header">Simulation de scénarios d\'intervention</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div style="color:#6b7280; font-size:0.85rem; margin-bottom:20px; font-family:'DM Sans',sans-serif;">
+    <div style="color:#475569; font-size:0.85rem; margin-bottom:20px; font-family:'DM Sans',sans-serif;">
         Définissez un objectif de réduction du NEET et découvrez l'impact des leviers d'action.
     </div>
     """, unsafe_allow_html=True)
@@ -660,9 +661,9 @@ with tab3:
         plot_bgcolor=BG_COLOR,
         height=max(280, len(rows) * 55),
         margin=dict(t=20, b=20, l=20, r=80),
-        xaxis=dict(title="Taux NEET (%)", color=TEXT_COLOR, gridcolor=GRID_COLOR,
+        xaxis=dict(title="Taux NEET (%)", color="#334155", gridcolor=GRID_COLOR,
                    range=[0, max(df_comp["NEET"].max() * 110, 30)]),
-        yaxis=dict(color="#374151", tickfont=dict(size=12)),
+        yaxis=dict(color="#0f172a", tickfont=dict(size=12)),
     )
     st.plotly_chart(fig_comp, use_container_width=True)
 
@@ -713,7 +714,7 @@ with tab3:
 # ─── FOOTER ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
 st.markdown("""
-<div style="text-align:center; color:#9ca3af; font-size:0.75rem; padding:8px 0 16px 0;
+    <div style="text-align:center; color:#64748b; font-size:0.75rem; padding:8px 0 16px 0;
             font-family:'DM Sans',sans-serif;">
     Modèle de Régression Linéaire &nbsp;·&nbsp; R² = 0.9595 &nbsp;·&nbsp; RMSE = 0.0273 &nbsp;·&nbsp; 552 communes &nbsp;·&nbsp; Sénégal
 </div>
