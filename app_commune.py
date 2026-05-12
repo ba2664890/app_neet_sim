@@ -7,6 +7,10 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import json
+import copy
+import re
+import unicodedata
+from urllib.request import urlopen
 import plotly.graph_objects as go
 import plotly.express as px
 
@@ -196,8 +200,41 @@ def load_data():
     df = pd.read_excel("Modele_NEET_Communes.xlsx", sheet_name="Données")
     return df
 
+def normalize_commune_name(value):
+    """Normalise les noms pour faire correspondre Excel et GeoJSON."""
+    text = str(value or "").upper().strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"[^A-Z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+@st.cache_data(show_spinner=False)
+def load_communes_geojson():
+    url = "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_SEN_4.json"
+    try:
+        with urlopen(url, timeout=20) as response:
+            geojson = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    # On garde le GeoJSON original intact dans le cache et on ajoute une clé de jointure.
+    geojson = copy.deepcopy(geojson)
+    for feature in geojson.get("features", []):
+        props = feature.get("properties", {})
+        commune_name = (
+            props.get("NAME_4")
+            or props.get("NAME_3")
+            or props.get("NAME_2")
+            or props.get("NAME_1")
+            or ""
+        )
+        props["_app_commune_key"] = normalize_commune_name(commune_name)
+        props["_app_commune_name"] = commune_name
+    return geojson
+
 params = load_model()
 df_data = load_data()
+df_data["_commune_key"] = df_data["Commune_Nom"].apply(normalize_commune_name)
 
 FEATURES       = params["features"]
 COEF           = np.array(params["coefficients"])
@@ -372,7 +409,12 @@ x_sc_arr = (x_arr - SCALER_MEAN) / SCALER_SCALE
 contributions = x_sc_arr * COEF
 
 # ─── MAIN LAYOUT ─────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["Résultat et Analyse", "Leviers d'action", "Comparaison"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Résultat et Analyse",
+    "Carte des communes",
+    "Leviers d'action",
+    "Comparaison",
+])
 
 # Couleurs pour les graphiques (thème clair)
 BG_COLOR   = "#ffffff"
@@ -498,9 +540,188 @@ with tab1:
         """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — Leviers d'action
+# TAB 2 — Carte des communes
 # ══════════════════════════════════════════════════════════════════════════════
 with tab2:
+    st.markdown('<div class="section-header">Recherche et carte des communes</div>', unsafe_allow_html=True)
+
+    default_commune = selected_commune if selected_commune != "— Manuel —" else "DAKAR-PLATEAU"
+    if default_commune not in df_data["Commune_Nom"].values:
+        default_commune = df_data["Commune_Nom"].iloc[0]
+
+    selected_map_commune = st.selectbox(
+        "Rechercher une commune",
+        sorted(df_data["Commune_Nom"].tolist()),
+        index=sorted(df_data["Commune_Nom"].tolist()).index(default_commune),
+        key="map_commune_search",
+    )
+
+    selected_row = df_data[df_data["Commune_Nom"] == selected_map_commune].iloc[0]
+    selected_actual_neet = float(selected_row[TARGET])
+    selected_pred_values = {f: float(selected_row[f]) for f in FEATURES}
+    selected_pred_neet = predict_neet(selected_pred_values)
+    selected_label, selected_color, _ = neet_label(selected_actual_neet)
+    rank = int(df_data[TARGET].rank(method="min", ascending=False).loc[selected_row.name])
+    total_communes = len(df_data)
+
+    col_map, col_info = st.columns([2, 1], gap="large")
+
+    with col_map:
+        geojson = load_communes_geojson()
+        map_df = df_data.copy()
+        map_df["NEET_pct"] = map_df[TARGET] * 100
+
+        if geojson:
+            geo_keys = {
+                feature.get("properties", {}).get("_app_commune_key")
+                for feature in geojson.get("features", [])
+            }
+            matched_count = int(map_df["_commune_key"].isin(geo_keys).sum())
+
+            fig_map = px.choropleth_mapbox(
+                map_df,
+                geojson=geojson,
+                locations="_commune_key",
+                featureidkey="properties._app_commune_key",
+                color="NEET_pct",
+                hover_name="Commune_Nom",
+                hover_data={
+                    "_commune_key": False,
+                    "NEET_pct": ":.1f",
+                    "E2_Taux_Chomage": ":.1%",
+                    "S2_Taux_NonScolarisation": ":.1%",
+                    "E8_Inactivite_Feminine": ":.1%",
+                },
+                color_continuous_scale=["#d1fae5", "#fef9c3", "#fca5a5", "#991b1b"],
+                range_color=(0, max(70, float(map_df["NEET_pct"].max()))),
+                mapbox_style="carto-positron",
+                center={"lat": 14.4974, "lon": -14.4524},
+                zoom=5.6,
+                opacity=0.72,
+            )
+            fig_map.update_traces(
+                marker_line_width=0.35,
+                marker_line_color="#ffffff",
+                hovertemplate="<b>%{hovertext}</b><br>Taux NEET : %{z:.1f}%<extra></extra>",
+            )
+            fig_map.update_layout(
+                height=560,
+                margin=dict(t=0, b=0, l=0, r=0),
+                paper_bgcolor=BG_COLOR,
+                coloraxis_colorbar=dict(
+                    title="NEET (%)",
+                    tickfont=dict(color="#000000"),
+                    titlefont=dict(color="#000000"),
+                ),
+            )
+
+            selected_key = normalize_commune_name(selected_map_commune)
+            selected_geo = [
+                feature for feature in geojson.get("features", [])
+                if feature.get("properties", {}).get("_app_commune_key") == selected_key
+            ]
+            if selected_geo:
+                fig_map.add_trace(go.Choroplethmapbox(
+                    geojson={"type": "FeatureCollection", "features": selected_geo},
+                    locations=[selected_key],
+                    z=[1],
+                    featureidkey="properties._app_commune_key",
+                    colorscale=[[0, "#2563eb"], [1, "#2563eb"]],
+                    showscale=False,
+                    marker_opacity=0.18,
+                    marker_line_width=3,
+                    marker_line_color="#1d4ed8",
+                    hoverinfo="skip",
+                ))
+
+            st.plotly_chart(fig_map, use_container_width=True)
+            st.caption(f"Contours GADM niveau 4 chargés automatiquement. Correspondances trouvées : {matched_count}/{total_communes} communes.")
+        else:
+            st.warning(
+                "La carte géographique n'a pas pu être chargée. Vérifiez la connexion internet, "
+                "puis relancez l'application pour récupérer les contours des communes."
+            )
+
+    with col_info:
+        st.markdown(f"""
+        <div class="metric-card" style="border-color:{selected_color};">
+            <div class="metric-label">Commune sélectionnée</div>
+            <div class="metric-value" style="font-size:1.55rem; color:#0f172a;">
+                {selected_map_commune}
+            </div>
+            <div class="metric-sub" style="color:{selected_color};">
+                {selected_label} · Rang {rank}/{total_communes}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        indicator_cards = [
+            ("Taux NEET observé", selected_actual_neet, selected_actual_neet - neet_mean),
+            ("NEET prédit modèle", selected_pred_neet, selected_pred_neet - neet_mean),
+            ("Chômage", float(selected_row["E2_Taux_Chomage"]), float(selected_row["E2_Taux_Chomage"]) - FEAT_STATS["E2_Taux_Chomage"]["mean"]),
+            ("Non-scolarisation", float(selected_row["S2_Taux_NonScolarisation"]), float(selected_row["S2_Taux_NonScolarisation"]) - FEAT_STATS["S2_Taux_NonScolarisation"]["mean"]),
+            ("Inactivité féminine", float(selected_row["E8_Inactivite_Feminine"]), float(selected_row["E8_Inactivite_Feminine"]) - FEAT_STATS["E8_Inactivite_Feminine"]["mean"]),
+            ("Accès internet", float(selected_row["T1_Acces_Internet"]), float(selected_row["T1_Acces_Internet"]) - FEAT_STATS["T1_Acces_Internet"]["mean"]),
+        ]
+
+        for title, value, delta_value in indicator_cards:
+            st.markdown(f"""
+            <div class="metric-card" style="margin-top:12px; padding:18px 20px;">
+                <div class="metric-label">{title}</div>
+                <div class="metric-value" style="font-size:1.6rem; color:#2563eb;">
+                    {value*100:.1f}%
+                </div>
+                <div class="metric-sub" style="color:{'#dc2626' if delta_value>0 else '#059669'};">
+                    {'▲' if delta_value>0 else '▼'} {abs(delta_value)*100:.1f} pts vs moy.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown('<div class="section-header" style="margin-top:16px;">Profil rapide</div>', unsafe_allow_html=True)
+        profile_feats = [
+            "S2_Taux_NonScolarisation",
+            "E2_Taux_Chomage",
+            "S3_Taux_Achevement_BFEM",
+            "D4_Mariage_Precoce",
+            "T1_Acces_Internet",
+        ]
+        profile_df = pd.DataFrame({
+            "Indicateur": [LABELS[f] for f in profile_feats],
+            "Commune": [float(selected_row[f]) * 100 for f in profile_feats],
+            "Moyenne": [FEAT_STATS[f]["mean"] * 100 for f in profile_feats],
+        })
+        fig_profile = go.Figure()
+        fig_profile.add_trace(go.Bar(
+            x=profile_df["Commune"],
+            y=profile_df["Indicateur"],
+            orientation="h",
+            marker_color="#2563eb",
+            name=selected_map_commune,
+        ))
+        fig_profile.add_trace(go.Bar(
+            x=profile_df["Moyenne"],
+            y=profile_df["Indicateur"],
+            orientation="h",
+            marker_color="#cbd5e1",
+            name="Moyenne",
+        ))
+        fig_profile.update_layout(
+            barmode="group",
+            height=260,
+            margin=dict(t=10, b=20, l=10, r=10),
+            paper_bgcolor=BG_COLOR,
+            plot_bgcolor=BG_COLOR,
+            font=dict(color="#000000"),
+            xaxis=dict(title="%", gridcolor=GRID_COLOR, color="#000000"),
+            yaxis=dict(color="#000000", tickfont=dict(size=9)),
+            legend=dict(orientation="h", y=-0.25, font=dict(color="#000000")),
+        )
+        st.plotly_chart(fig_profile, use_container_width=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 3 — Leviers d'action
+# ══════════════════════════════════════════════════════════════════════════════
+with tab3:
     st.markdown('<div class="section-header">Simulation de scénarios d\'intervention</div>', unsafe_allow_html=True)
     st.markdown("""
     <div style="color:#475569; font-size:0.85rem; margin-bottom:20px; font-family:'DM Sans',sans-serif;">
@@ -631,9 +852,9 @@ with tab2:
             """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — Comparaison avec d'autres communes
+# TAB 4 — Comparaison avec d'autres communes
 # ══════════════════════════════════════════════════════════════════════════════
-with tab3:
+with tab4:
     st.markdown('<div class="section-header">Comparaison avec d\'autres communes</div>', unsafe_allow_html=True)
 
     communes_compare = st.multiselect(
