@@ -208,6 +208,60 @@ def normalize_commune_name(value):
     text = re.sub(r"[^A-Z0-9]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
+def iter_geojson_points(geometry):
+    if not geometry:
+        return
+    geom_type = geometry.get("type")
+    coords = geometry.get("coordinates", [])
+
+    if geom_type == "Polygon":
+        for ring in coords:
+            for lon, lat, *rest in ring:
+                yield lon, lat
+    elif geom_type == "MultiPolygon":
+        for polygon in coords:
+            for ring in polygon:
+                for lon, lat, *rest in ring:
+                    yield lon, lat
+
+def feature_collection_bounds(features):
+    points = [
+        point
+        for feature in features
+        for point in iter_geojson_points(feature.get("geometry"))
+    ]
+    if not points:
+        return None
+
+    lons, lats = zip(*points)
+    return {
+        "min_lon": min(lons),
+        "max_lon": max(lons),
+        "min_lat": min(lats),
+        "max_lat": max(lats),
+        "center": {"lon": (min(lons) + max(lons)) / 2, "lat": (min(lats) + max(lats)) / 2},
+    }
+
+def zoom_from_bounds(bounds):
+    if not bounds:
+        return 5.6
+
+    lon_span = max(bounds["max_lon"] - bounds["min_lon"], 0.01)
+    lat_span = max(bounds["max_lat"] - bounds["min_lat"], 0.01)
+    span = max(lon_span, lat_span)
+
+    if span <= 0.04:
+        return 12
+    if span <= 0.08:
+        return 11
+    if span <= 0.16:
+        return 10
+    if span <= 0.35:
+        return 9
+    if span <= 0.7:
+        return 8
+    return 7
+
 @st.cache_data(show_spinner=False)
 def load_communes_geojson():
     url = "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_SEN_4.json"
@@ -549,20 +603,23 @@ with tab2:
     if default_commune not in df_data["Commune_Nom"].values:
         default_commune = df_data["Commune_Nom"].iloc[0]
 
+    commune_options = sorted(df_data["Commune_Nom"].tolist())
+    total_communes = len(df_data)
+    active_commune = st.session_state.get("active_map_commune", default_commune)
+    if active_commune not in commune_options:
+        active_commune = default_commune
+    st.session_state["active_map_commune"] = active_commune
+    if st.session_state.get("map_commune_search") != active_commune:
+        st.session_state["map_commune_search"] = active_commune
+
     selected_map_commune = st.selectbox(
         "Rechercher une commune",
-        sorted(df_data["Commune_Nom"].tolist()),
-        index=sorted(df_data["Commune_Nom"].tolist()).index(default_commune),
+        commune_options,
+        index=commune_options.index(active_commune),
         key="map_commune_search",
     )
-
-    selected_row = df_data[df_data["Commune_Nom"] == selected_map_commune].iloc[0]
-    selected_actual_neet = float(selected_row[TARGET])
-    selected_pred_values = {f: float(selected_row[f]) for f in FEATURES}
-    selected_pred_neet = predict_neet(selected_pred_values)
-    selected_label, selected_color, _ = neet_label(selected_actual_neet)
-    rank = int(df_data[TARGET].rank(method="min", ascending=False).loc[selected_row.name])
-    total_communes = len(df_data)
+    if selected_map_commune != st.session_state["active_map_commune"]:
+        st.session_state["active_map_commune"] = selected_map_commune
 
     col_map, col_info = st.columns([2, 1], gap="large")
 
@@ -577,6 +634,14 @@ with tab2:
                 for feature in geojson.get("features", [])
             }
             matched_count = int(map_df["_commune_key"].isin(geo_keys).sum())
+            selected_key = normalize_commune_name(selected_map_commune)
+            selected_geo = [
+                feature for feature in geojson.get("features", [])
+                if feature.get("properties", {}).get("_app_commune_key") == selected_key
+            ]
+            selected_bounds = feature_collection_bounds(selected_geo)
+            map_center = selected_bounds["center"] if selected_bounds else {"lat": 14.4974, "lon": -14.4524}
+            map_zoom = zoom_from_bounds(selected_bounds)
 
             fig_map = px.choropleth_mapbox(
                 map_df,
@@ -585,6 +650,7 @@ with tab2:
                 featureidkey="properties._app_commune_key",
                 color="NEET_pct",
                 hover_name="Commune_Nom",
+                custom_data=["Commune_Nom"],
                 hover_data={
                     "_commune_key": False,
                     "NEET_pct": ":.1f",
@@ -595,8 +661,8 @@ with tab2:
                 color_continuous_scale=["#d1fae5", "#fef9c3", "#fca5a5", "#991b1b"],
                 range_color=(0, max(70, float(map_df["NEET_pct"].max()))),
                 mapbox_style="carto-positron",
-                center={"lat": 14.4974, "lon": -14.4524},
-                zoom=5.6,
+                center=map_center,
+                zoom=map_zoom,
                 opacity=0.72,
             )
             fig_map.update_traces(
@@ -614,11 +680,6 @@ with tab2:
                 ),
             )
 
-            selected_key = normalize_commune_name(selected_map_commune)
-            selected_geo = [
-                feature for feature in geojson.get("features", [])
-                if feature.get("properties", {}).get("_app_commune_key") == selected_key
-            ]
             if selected_geo:
                 fig_map.add_trace(go.Choroplethmapbox(
                     geojson={"type": "FeatureCollection", "features": selected_geo},
@@ -633,7 +694,35 @@ with tab2:
                     hoverinfo="skip",
                 ))
 
-            st.plotly_chart(fig_map, use_container_width=True)
+            map_event = None
+            try:
+                map_event = st.plotly_chart(
+                    fig_map,
+                    use_container_width=True,
+                    key="communes_neet_map",
+                    on_select="rerun",
+                    selection_mode="points",
+                )
+            except TypeError:
+                st.plotly_chart(fig_map, use_container_width=True)
+
+            if map_event:
+                if isinstance(map_event, dict):
+                    selected_points = map_event.get("selection", {}).get("points", [])
+                else:
+                    selected_points = getattr(getattr(map_event, "selection", None), "points", [])
+                if selected_points:
+                    point_data = selected_points[0]
+                    customdata = point_data.get("customdata", [None])
+                    clicked_commune = customdata[0] if isinstance(customdata, list) else customdata
+                    clicked_commune = clicked_commune or point_data.get("location")
+                    if clicked_commune in commune_options:
+                        st.session_state["active_map_commune"] = clicked_commune
+                        if hasattr(st, "rerun"):
+                            st.rerun()
+                        else:
+                            st.experimental_rerun()
+
             st.caption(f"Contours GADM niveau 4 chargés automatiquement. Correspondances trouvées : {matched_count}/{total_communes} communes.")
         else:
             st.warning(
@@ -642,6 +731,14 @@ with tab2:
             )
 
     with col_info:
+        selected_map_commune = st.session_state["active_map_commune"]
+        selected_row = df_data[df_data["Commune_Nom"] == selected_map_commune].iloc[0]
+        selected_actual_neet = float(selected_row[TARGET])
+        selected_pred_values = {f: float(selected_row[f]) for f in FEATURES}
+        selected_pred_neet = predict_neet(selected_pred_values)
+        selected_label, selected_color, _ = neet_label(selected_actual_neet)
+        rank = int(df_data[TARGET].rank(method="min", ascending=False).loc[selected_row.name])
+
         st.markdown(f"""
         <div class="metric-card" style="border-color:{selected_color};">
             <div class="metric-label">Commune sélectionnée</div>
