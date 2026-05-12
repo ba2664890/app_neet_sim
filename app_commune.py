@@ -262,6 +262,31 @@ def zoom_from_bounds(bounds):
         return 8
     return 7
 
+def simplify_ring(ring, max_points=120):
+    if len(ring) <= max_points:
+        return ring
+
+    step = max(1, int(np.ceil(len(ring) / max_points)))
+    simplified = ring[::step]
+    if simplified[-1] != ring[-1]:
+        simplified.append(ring[-1])
+    return simplified
+
+def simplify_geometry(geometry, max_points=120):
+    if not geometry:
+        return geometry
+
+    geom_type = geometry.get("type")
+    coords = geometry.get("coordinates", [])
+    if geom_type == "Polygon":
+        geometry["coordinates"] = [simplify_ring(ring, max_points) for ring in coords]
+    elif geom_type == "MultiPolygon":
+        geometry["coordinates"] = [
+            [simplify_ring(ring, max_points) for ring in polygon]
+            for polygon in coords
+        ]
+    return geometry
+
 @st.cache_data(show_spinner=False)
 def load_communes_geojson():
     url = "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_SEN_4.json"
@@ -284,6 +309,7 @@ def load_communes_geojson():
         )
         props["_app_commune_key"] = normalize_commune_name(commune_name)
         props["_app_commune_name"] = commune_name
+        feature["geometry"] = simplify_geometry(feature.get("geometry"))
     return geojson
 
 params = load_model()
@@ -312,6 +338,12 @@ def neet_label(v):
     if v < 0.45: return "Modéré",   "#d97706", "badge-medium"
     if v < 0.65: return "Élevé",    "#dc2626", "badge-high"
     return            "Critique",   "#7f1d1d", "badge-critic"
+
+def slider_value(value, min_value, max_value, step, decimals):
+    value = min(max(float(value), float(min_value)), float(max_value))
+    steps = round((value - min_value) / step)
+    aligned = min_value + steps * step
+    return round(min(max(aligned, min_value), max_value), decimals)
 
 # ─── FEATURE GROUPS ──────────────────────────────────────────────────────────
 GROUPS = {
@@ -440,15 +472,17 @@ with st.sidebar:
             avg = defaults[feat]
 
             if feat == "R1_Taille_Moyenne_Menages":
+                min_slider = round(mn, 1)
+                max_slider = round(mx, 1)
                 val = st.slider(
-                    LABELS[feat], min_value=round(mn, 1), max_value=round(mx, 1),
-                    value=round(avg, 1), step=0.1, key=feat,
+                    LABELS[feat], min_value=min_slider, max_value=max_slider,
+                    value=slider_value(avg, min_slider, max_slider, 0.1, 1), step=0.1, key=feat,
                     format="%.1f"
                 )
             else:
                 val = st.slider(
                     LABELS[feat], min_value=0.0, max_value=1.0,
-                    value=round(min(max(avg, 0.0), 1.0), 3),
+                    value=slider_value(avg, 0.0, 1.0, 0.01, 2),
                     step=0.01, key=feat, format="%.2f"
                 )
             values[feat] = val
@@ -643,7 +677,14 @@ with tab2:
             map_center = selected_bounds["center"] if selected_bounds else {"lat": 14.4974, "lon": -14.4524}
             map_zoom = zoom_from_bounds(selected_bounds)
 
-            fig_map = px.choropleth_mapbox(
+            choropleth_map = getattr(px, "choropleth_map", px.choropleth_mapbox)
+            map_style_args = (
+                {"map_style": "carto-positron"}
+                if hasattr(px, "choropleth_map")
+                else {"mapbox_style": "carto-positron"}
+            )
+
+            fig_map = choropleth_map(
                 map_df,
                 geojson=geojson,
                 locations="_commune_key",
@@ -660,10 +701,10 @@ with tab2:
                 },
                 color_continuous_scale=["#d1fae5", "#fef9c3", "#fca5a5", "#991b1b"],
                 range_color=(0, max(70, float(map_df["NEET_pct"].max()))),
-                mapbox_style="carto-positron",
                 center=map_center,
                 zoom=map_zoom,
                 opacity=0.72,
+                **map_style_args,
             )
             fig_map.update_traces(
                 marker_line_width=0.35,
@@ -681,7 +722,8 @@ with tab2:
             )
 
             if selected_geo:
-                fig_map.add_trace(go.Choroplethmapbox(
+                outline_trace = getattr(go, "Choroplethmap", go.Choroplethmapbox)
+                fig_map.add_trace(outline_trace(
                     geojson={"type": "FeatureCollection", "features": selected_geo},
                     locations=[selected_key],
                     z=[1],
