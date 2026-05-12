@@ -609,9 +609,8 @@ with tab2:
                 margin=dict(t=0, b=0, l=0, r=0),
                 paper_bgcolor=BG_COLOR,
                 coloraxis_colorbar=dict(
-                    title="NEET (%)",
+                    title=dict(text="NEET (%)", font=dict(color="#000000")),
                     tickfont=dict(color="#000000"),
-                    titlefont=dict(color="#000000"),
                 ),
             )
 
