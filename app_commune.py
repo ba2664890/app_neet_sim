@@ -185,6 +185,25 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
     border: 1px solid #e2e8f0;
     border-radius: 10px;
 }
+.stSelectbox [data-baseweb="select"],
+.stSelectbox [data-baseweb="select"] *,
+div[data-baseweb="popover"] [role="listbox"],
+div[data-baseweb="popover"] [role="listbox"] * {
+    color: #0f172a !important;
+}
+.stSelectbox [data-baseweb="select"] input {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+div[data-baseweb="popover"] {
+    background: #ffffff !important;
+}
+div[data-baseweb="popover"] [role="option"] {
+    background: #ffffff !important;
+}
+div[data-baseweb="popover"] [role="option"]:hover {
+    background: #eff6ff !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -345,6 +364,42 @@ def slider_value(value, min_value, max_value, step, decimals):
     aligned = min_value + steps * step
     return round(min(max(aligned, min_value), max_value), decimals)
 
+def defaults_for_commune(commune_name):
+    """Retourne les valeurs de simulation pour la commune synchronisée."""
+    if commune_name and commune_name != "— Manuel —":
+        row = df_data[df_data["Commune_Nom"] == commune_name].iloc[0]
+        return {f: float(row[f]) for f in FEATURES}
+    return {f: float(FEAT_STATS[f]["mean"]) for f in FEATURES}
+
+def sync_simulation_sliders():
+    selected = st.session_state.get("simulation_commune_loader", "— Manuel —")
+    for feat, value in defaults_for_commune(selected).items():
+        st.session_state[feat] = value
+
+def sync_from_simulation_loader():
+    selected = st.session_state.get("simulation_commune_loader", "— Manuel —")
+    st.session_state["selected_commune"] = selected
+    if selected != "— Manuel —":
+        st.session_state["active_map_commune"] = selected
+        st.session_state["map_commune_search"] = selected
+    sync_simulation_sliders()
+
+def sync_from_map_search():
+    selected = st.session_state.get("map_commune_search")
+    if selected:
+        st.session_state["selected_commune"] = selected
+        st.session_state["simulation_commune_loader"] = selected
+        st.session_state["active_map_commune"] = selected
+        sync_simulation_sliders()
+
+def sync_from_map_click(commune_name):
+    st.session_state["selected_commune"] = commune_name
+    st.session_state["simulation_commune_loader"] = commune_name
+    st.session_state["map_commune_search"] = commune_name
+    st.session_state["active_map_commune"] = commune_name
+    for feat, value in defaults_for_commune(commune_name).items():
+        st.session_state[feat] = value
+
 # ─── FEATURE GROUPS ──────────────────────────────────────────────────────────
 GROUPS = {
     "Démographie": {
@@ -435,6 +490,26 @@ st.markdown("""
 
 st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
 
+commune_options = sorted(df_data["Commune_Nom"].tolist())
+communes_list = ["— Manuel —"] + commune_options
+default_map_commune = "DAKAR-PLATEAU" if "DAKAR-PLATEAU" in commune_options else commune_options[0]
+
+st.session_state.setdefault("selected_commune", "— Manuel —")
+if st.session_state["selected_commune"] != "— Manuel —" and st.session_state["selected_commune"] not in commune_options:
+    st.session_state["selected_commune"] = "— Manuel —"
+st.session_state.setdefault("simulation_commune_loader", st.session_state["selected_commune"])
+if st.session_state["simulation_commune_loader"] not in communes_list:
+    st.session_state["simulation_commune_loader"] = "— Manuel —"
+st.session_state.setdefault(
+    "active_map_commune",
+    st.session_state["selected_commune"] if st.session_state["selected_commune"] != "— Manuel —" else default_map_commune,
+)
+if st.session_state["active_map_commune"] not in commune_options:
+    st.session_state["active_map_commune"] = default_map_commune
+st.session_state.setdefault("map_commune_search", st.session_state["active_map_commune"])
+if st.session_state["map_commune_search"] not in commune_options:
+    st.session_state["map_commune_search"] = st.session_state["active_map_commune"]
+
 # ─── SIDEBAR — SLIDERS ───────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
@@ -448,14 +523,16 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # Préchargement depuis une commune réelle
-    communes_list = ["— Manuel —"] + sorted(df_data["Commune_Nom"].tolist())
-    selected_commune = st.selectbox("Charger une commune", communes_list)
+    for feat, value in defaults_for_commune(st.session_state["simulation_commune_loader"]).items():
+        st.session_state.setdefault(feat, value)
 
-    if selected_commune != "— Manuel —":
-        row = df_data[df_data["Commune_Nom"] == selected_commune].iloc[0]
-        defaults = {f: float(row[f]) for f in FEATURES}
-    else:
-        defaults = {f: float(FEAT_STATS[f]["mean"]) for f in FEATURES}
+    selected_commune = st.selectbox(
+        "Charger une commune",
+        communes_list,
+        key="simulation_commune_loader",
+        on_change=sync_from_simulation_loader,
+    )
+    defaults = defaults_for_commune(selected_commune)
 
     st.markdown('<div class="fancy-divider"></div>', unsafe_allow_html=True)
 
@@ -633,15 +710,10 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-header">Recherche et carte des communes</div>', unsafe_allow_html=True)
 
-    default_commune = selected_commune if selected_commune != "— Manuel —" else "DAKAR-PLATEAU"
-    if default_commune not in df_data["Commune_Nom"].values:
-        default_commune = df_data["Commune_Nom"].iloc[0]
-
-    commune_options = sorted(df_data["Commune_Nom"].tolist())
     total_communes = len(df_data)
-    active_commune = st.session_state.get("active_map_commune", default_commune)
+    active_commune = st.session_state.get("active_map_commune", default_map_commune)
     if active_commune not in commune_options:
-        active_commune = default_commune
+        active_commune = default_map_commune
     st.session_state["active_map_commune"] = active_commune
     if st.session_state.get("map_commune_search") != active_commune:
         st.session_state["map_commune_search"] = active_commune
@@ -651,9 +723,13 @@ with tab2:
         commune_options,
         index=commune_options.index(active_commune),
         key="map_commune_search",
+        on_change=sync_from_map_search,
     )
     if selected_map_commune != st.session_state["active_map_commune"]:
         st.session_state["active_map_commune"] = selected_map_commune
+        st.session_state["selected_commune"] = selected_map_commune
+        st.session_state["simulation_commune_loader"] = selected_map_commune
+        sync_simulation_sliders()
 
     col_map, col_info = st.columns([2, 1], gap="large")
 
@@ -759,7 +835,7 @@ with tab2:
                     clicked_commune = customdata[0] if isinstance(customdata, list) else customdata
                     clicked_commune = clicked_commune or point_data.get("location")
                     if clicked_commune in commune_options:
-                        st.session_state["active_map_commune"] = clicked_commune
+                        sync_from_map_click(clicked_commune)
                         if hasattr(st, "rerun"):
                             st.rerun()
                         else:
