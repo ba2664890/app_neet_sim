@@ -498,6 +498,28 @@ st.session_state.setdefault("map_commune_search", st.session_state["active_map_c
 if st.session_state["map_commune_search"] not in commune_options:
     st.session_state["map_commune_search"] = st.session_state["active_map_commune"]
 
+# ─── HANDLE MAP CLICK SELECTION (BEFORE WIDGETS) ─────────────────────────────
+# We process map selection here so session state updates happen BEFORE widgets are rendered,
+# avoiding StreamlitAPIException.
+if "communes_neet_map" in st.session_state:
+    map_selection = st.session_state["communes_neet_map"]
+    if isinstance(map_selection, dict) and "selection" in map_selection:
+        points = map_selection["selection"].get("points", [])
+        if points:
+            point_data = points[0]
+            customdata = point_data.get("customdata", [None])
+            clicked_commune = customdata[0] if isinstance(customdata, list) else customdata
+            clicked_commune = clicked_commune or point_data.get("location")
+            if clicked_commune in commune_options:
+                # Sync only if it's a new selection to avoid redundant resets
+                if clicked_commune != st.session_state.get("selected_commune"):
+                    sync_from_map_click(clicked_commune)
+                
+                # Clear the selection from session state to avoid "stickiness" 
+                # (overriding manual changes in subsequent reruns)
+                # The visual highlight is maintained by the outline trace in the map rendering logic.
+                st.session_state["communes_neet_map"] = None
+
 # ─── SIDEBAR — SLIDERS ───────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
@@ -814,21 +836,8 @@ with tab2:
                 st.plotly_chart(fig_map, use_container_width=True)
 
             if map_event:
-                if isinstance(map_event, dict):
-                    selected_points = map_event.get("selection", {}).get("points", [])
-                else:
-                    selected_points = getattr(getattr(map_event, "selection", None), "points", [])
-                if selected_points:
-                    point_data = selected_points[0]
-                    customdata = point_data.get("customdata", [None])
-                    clicked_commune = customdata[0] if isinstance(customdata, list) else customdata
-                    clicked_commune = clicked_commune or point_data.get("location")
-                    if clicked_commune in commune_options:
-                        sync_from_map_click(clicked_commune)
-                        if hasattr(st, "rerun"):
-                            st.rerun()
-                        else:
-                            st.experimental_rerun()
+                # Note: Selection handling is now at the top of the script to avoid session state conflicts.
+                pass
 
             st.caption(f"Contours GADM niveau 4 chargés automatiquement. Correspondances trouvées : {matched_count}/{total_communes} communes.")
         else:
