@@ -345,6 +345,13 @@ def slider_value(value, min_value, max_value, step, decimals):
     aligned = min_value + steps * step
     return round(min(max(aligned, min_value), max_value), decimals)
 
+def slider_default_for_feature(feat, value):
+    if feat == "R1_Taille_Moyenne_Menages":
+        min_slider = round(FEAT_STATS[feat]["min"], 1)
+        max_slider = round(FEAT_STATS[feat]["max"], 1)
+        return slider_value(value, min_slider, max_slider, 0.1, 1)
+    return slider_value(value, 0.0, 1.0, 0.01, 2)
+
 def defaults_for_commune(commune_name):
     """Retourne les valeurs de simulation pour la commune synchronisée."""
     if commune_name and commune_name != "— Manuel —":
@@ -355,7 +362,7 @@ def defaults_for_commune(commune_name):
 def sync_simulation_sliders():
     selected = st.session_state.get("simulation_commune_loader", "— Manuel —")
     for feat, value in defaults_for_commune(selected).items():
-        st.session_state[feat] = value
+        st.session_state[feat] = slider_default_for_feature(feat, value)
 
 def sync_from_simulation_loader():
     selected = st.session_state.get("simulation_commune_loader", "— Manuel —")
@@ -379,7 +386,7 @@ def sync_from_map_click(commune_name):
     st.session_state["map_commune_search"] = commune_name
     st.session_state["active_map_commune"] = commune_name
     for feat, value in defaults_for_commune(commune_name).items():
-        st.session_state[feat] = value
+        st.session_state[feat] = slider_default_for_feature(feat, value)
 
 # ─── FEATURE GROUPS ──────────────────────────────────────────────────────────
 GROUPS = {
@@ -505,7 +512,8 @@ with st.sidebar:
 
     # Préchargement depuis une commune réelle
     for feat, value in defaults_for_commune(st.session_state["simulation_commune_loader"]).items():
-        st.session_state.setdefault(feat, value)
+        st.session_state.setdefault(feat, slider_default_for_feature(feat, value))
+        st.session_state[feat] = slider_default_for_feature(feat, st.session_state[feat])
 
     selected_commune = st.selectbox(
         "Charger une commune",
