@@ -185,25 +185,6 @@ h2, h3 { font-family: 'DM Sans', sans-serif !important; }
     border: 1px solid #e2e8f0;
     border-radius: 10px;
 }
-.stSelectbox [data-baseweb="select"],
-.stSelectbox [data-baseweb="select"] *,
-div[data-baseweb="popover"] [role="listbox"],
-div[data-baseweb="popover"] [role="listbox"] * {
-    color: #0f172a !important;
-}
-.stSelectbox [data-baseweb="select"] input {
-    color: #0f172a !important;
-    -webkit-text-fill-color: #0f172a !important;
-}
-div[data-baseweb="popover"] {
-    background: #ffffff !important;
-}
-div[data-baseweb="popover"] [role="option"] {
-    background: #ffffff !important;
-}
-div[data-baseweb="popover"] [role="option"]:hover {
-    background: #eff6ff !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
